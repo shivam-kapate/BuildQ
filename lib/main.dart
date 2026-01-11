@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
-// Ensure these files exist in your lib folder
 import 'worker_list.dart' show WorkerListScreen;
 import 'worker_dashboard.dart' show WorkerDashboard;
+import 'location_service.dart'; // Ensure this file exists in your lib folder
 
 void main() {
   runApp(const BuildQApp());
@@ -118,15 +118,7 @@ class OTPScreen extends StatelessWidget {
             const Text("Verify Phone", style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold)),
             Text("Code sent to $phoneNumber", style: const TextStyle(color: Colors.grey)),
             const SizedBox(height: 40),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-              children: [
-                _otpInput(context, first: true),
-                _otpInput(context),
-                _otpInput(context),
-                _otpInput(context, last: true),
-              ],
-            ),
+            const Text("Please enter 4-digit code", style: TextStyle(fontSize: 14)),
             const SizedBox(height: 40),
             SizedBox(
               width: double.infinity,
@@ -145,29 +137,6 @@ class OTPScreen extends StatelessWidget {
       ),
     );
   }
-
-  Widget _otpInput(BuildContext context, {bool first = false, bool last = false}) {
-    return Container(
-      height: 60, width: 60,
-      decoration: BoxDecoration(
-        color: const Color(0xFFF8F9FB), 
-        borderRadius: BorderRadius.circular(15), 
-        border: Border.all(color: Colors.indigo.withOpacity(0.1))
-      ),
-      child: TextField(
-        autofocus: first,
-        onChanged: (value) {
-          if (value.length == 1 && !last) FocusScope.of(context).nextFocus();
-          if (value.isEmpty && !first) FocusScope.of(context).previousFocus();
-        },
-        textAlign: TextAlign.center,
-        keyboardType: TextInputType.number,
-        maxLength: 1,
-        decoration: const InputDecoration(border: InputBorder.none, counterText: ""),
-        style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
-      ),
-    );
-  }
 }
 
 // --- 3. HOME PAGE ---
@@ -179,6 +148,7 @@ class HomePage extends StatefulWidget {
 }
 
 class _HomePageState extends State<HomePage> {
+  String userCity = "Detecting...";
   final List<Map<String, dynamic>> allCategories = [
     {'name': 'Plumber', 'icon': Icons.plumbing, 'color': Colors.blue},
     {'name': 'Mason', 'icon': Icons.foundation, 'color': Colors.orange},
@@ -194,6 +164,16 @@ class _HomePageState extends State<HomePage> {
   void initState() {
     super.initState();
     filteredCategories = allCategories;
+    _loadLocation();
+  }
+
+  _loadLocation() async {
+    String city = await LocationService.getCurrentCity();
+    if (mounted) {
+      setState(() {
+        userCity = city;
+      });
+    }
   }
 
   void _filter(String query) {
@@ -209,11 +189,25 @@ class _HomePageState extends State<HomePage> {
     return Scaffold(
       backgroundColor: const Color(0xFFF8F9FB),
       appBar: AppBar(
-        title: const Text('BUILDQ', style: TextStyle(fontWeight: FontWeight.bold, letterSpacing: 2)),
-        centerTitle: true, 
-        backgroundColor: Colors.white, 
-        foregroundColor: Colors.black, 
         elevation: 0,
+        backgroundColor: Colors.white,
+        title: GestureDetector(
+          onTap: () => _loadLocation(),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text("Location", style: TextStyle(fontSize: 10, color: Colors.grey)),
+              Row(
+                children: [
+                  const Icon(Icons.location_on, color: Colors.indigo, size: 16),
+                  const SizedBox(width: 4),
+                  Text(userCity, style: const TextStyle(fontSize: 14, color: Colors.black, fontWeight: FontWeight.bold)),
+                  const Icon(Icons.keyboard_arrow_down, color: Colors.black, size: 16),
+                ],
+              ),
+            ],
+          ),
+        ),
         actions: [
           IconButton(
             icon: const Icon(Icons.engineering, color: Colors.indigo), 
@@ -221,70 +215,80 @@ class _HomePageState extends State<HomePage> {
           )
         ],
       ),
-      body: Padding(
-        padding: const EdgeInsets.all(20.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text("Find a Pro,", style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold)),
-            const Text("Quality Skills, Quick Connections", style: TextStyle(fontSize: 16, color: Colors.grey)),
-            const SizedBox(height: 30),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 15),
-              decoration: BoxDecoration(
-                color: Colors.white, 
-                borderRadius: BorderRadius.circular(15), 
-                boxShadow: const [BoxShadow(color: Colors.black12, blurRadius: 10)]
-              ),
-              child: TextField(
-                onChanged: _filter,
-                decoration: const InputDecoration(
-                  icon: Icon(Icons.search, color: Colors.indigo), 
-                  hintText: "Search for a worker...", 
-                  border: InputBorder.none
+      body: SingleChildScrollView(
+        child: Padding(
+          padding: const EdgeInsets.all(20.0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text("Find a Pro,", style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold)),
+              const Text("Quality Skills, Quick Connections", style: TextStyle(fontSize: 16, color: Colors.grey)),
+              const SizedBox(height: 25),
+              
+              // Search Bar
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 15),
+                decoration: BoxDecoration(
+                  color: Colors.white, 
+                  borderRadius: BorderRadius.circular(15), 
+                  boxShadow: const [BoxShadow(color: Colors.black12, blurRadius: 10)]
+                ),
+                child: TextField(
+                  onChanged: _filter,
+                  decoration: const InputDecoration(
+                    icon: Icon(Icons.search, color: Colors.indigo), 
+                    hintText: "Search for a worker...", 
+                    border: InputBorder.none
+                  ),
                 ),
               ),
-            ),
-            const SizedBox(height: 30),
-            const Text("Categories", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-            const SizedBox(height: 15),
-            Expanded(
-              child: filteredCategories.isEmpty 
-              ? const Center(child: Text("No pro found in this category"))
+              const SizedBox(height: 30),
+              
+              const Text("Categories", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+              const SizedBox(height: 15),
+
+              // Categories Grid
+              filteredCategories.isEmpty 
+              ? const Center(child: Padding(
+                  padding: EdgeInsets.only(top: 20),
+                  child: Text("No pro found in this category"),
+                ))
               : GridView.builder(
-                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                  crossAxisCount: 2, 
-                  crossAxisSpacing: 15, 
-                  mainAxisSpacing: 15, 
-                  childAspectRatio: 1.1
+                  shrinkWrap: true,
+                  physics: const NeverScrollableScrollPhysics(),
+                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                    crossAxisCount: 2, 
+                    crossAxisSpacing: 15, 
+                    mainAxisSpacing: 15, 
+                    childAspectRatio: 1.1
+                  ),
+                  itemCount: filteredCategories.length,
+                  itemBuilder: (context, index) {
+                    return InkWell(
+                      onTap: () => Navigator.push(
+                        context, 
+                        MaterialPageRoute(builder: (context) => WorkerListScreen(category: filteredCategories[index]['name']))
+                      ),
+                      child: Container(
+                        decoration: BoxDecoration(
+                          color: Colors.white, 
+                          borderRadius: BorderRadius.circular(20), 
+                          border: Border.all(color: Colors.black.withOpacity(0.05))
+                        ),
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(filteredCategories[index]['icon'], size: 40, color: filteredCategories[index]['color']),
+                            const SizedBox(height: 10),
+                            Text(filteredCategories[index]['name'], style: const TextStyle(fontWeight: FontWeight.w600)),
+                          ],
+                        ),
+                      ),
+                    );
+                  },
                 ),
-                itemCount: filteredCategories.length,
-                itemBuilder: (context, index) {
-                  return InkWell(
-                    onTap: () => Navigator.push(
-                      context, 
-                      MaterialPageRoute(builder: (context) => WorkerListScreen(category: filteredCategories[index]['name']))
-                    ),
-                    child: Container(
-                      decoration: BoxDecoration(
-                        color: Colors.white, 
-                        borderRadius: BorderRadius.circular(20), 
-                        border: Border.all(color: Colors.black.withOpacity(0.05))
-                      ),
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Icon(filteredCategories[index]['icon'], size: 40, color: filteredCategories[index]['color']),
-                          const SizedBox(height: 10),
-                          Text(filteredCategories[index]['name'], style: const TextStyle(fontWeight: FontWeight.w600)),
-                        ],
-                      ),
-                    ),
-                  );
-                },
-              ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
