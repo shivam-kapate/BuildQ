@@ -3,6 +3,8 @@ import 'worker_list.dart' show WorkerListScreen;
 import 'worker_dashboard.dart' show WorkerDashboard;
 import 'location_service.dart'; // Ensure this file exists in your lib folder
 
+// ignore: unused_element
+int _currentIndex = 0;
 void main() {
   runApp(const BuildQApp());
 }
